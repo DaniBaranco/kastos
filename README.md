@@ -1,68 +1,92 @@
-# Kastos — Finanzas del Hogar
+# Kastos
 
-PWA de gestión de ingresos, gastos y ahorro familiar. **100% local**, sin registro, sin nube. Los datos se guardan cifrados en el dispositivo mediante IndexedDB.
+> Personal finance manager built as a Progressive Web App. Track income, expenses, savings goals and category budgets — entirely client-side, no backend required.
 
-## ✨ Funcionalidades
+[![Live demo](https://img.shields.io/badge/demo-live-brightgreen)](https://danibaranco.github.io/kastos/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![No backend](https://img.shields.io/badge/backend-none-lightgrey)
+![PWA](https://img.shields.io/badge/PWA-offline--ready-blueviolet)
 
-- 💰 **Dashboard** con saldo del mes, ingresos, gastos y ahorro en tiempo real
-- 📊 **Gráfica de evolución** — ingresos vs gastos de los últimos 6 meses
-- 🍩 **Gráfica de dona** — distribución de gastos por categoría
-- 📋 **Movimientos** — listado completo con filtros por mes, categoría y tipo
-- 🏷️ **Categorías personalizables** con emoji, color y presupuesto mensual
-- 🎯 **Metas de ahorro** con progreso visual y alerta de fecha límite
-- 💾 **Exportar / Importar** datos en JSON y CSV
-- 📱 **PWA instalable** — funciona offline como app nativa
+---
 
-## 🎨 Design System
+## Features
 
-Inspirado en eToro: dark mode profundo, acentos verde lima `#00c853`, tarjetas glassmórficas, tipografía Inter, botones pill y números grandes.
+- **Dashboard** — monthly balance, income, expenses and net savings at a glance
+- **Transaction log** — full history with filters by month, category and type
+- **Category budgets** — custom emoji/color categories with monthly spending limits and visual alerts (90 % warning, 100 % exceeded)
+- **Savings goals** — target amount, deadline and progress tracking
+- **Recurring expenses** — mark any transaction as recurring; the app auto-generates copies at the start of each month
+- **Charts** — bar chart (income vs expenses, 6-month window), doughnut (spending by category), line chart (accumulated savings over time)
+- **Data portability** — full export/import in JSON; transaction export in CSV
+- **Installable PWA** — works fully offline once installed on any device
 
-## 🛠️ Tecnologías
+## Tech stack
 
-| Capa | Tecnología |
+| Layer | Technology |
 |---|---|
-| Frontend | HTML5 + CSS3 + JavaScript (ES Modules) |
-| Persistencia | IndexedDB (API nativa) |
-| Gráficas | Chart.js 4 (CDN) |
-| Fuentes | Inter (Google Fonts) |
-| Iconos UI | Flaticon Uicons |
-| PWA | Service Worker + Web App Manifest |
+| UI | HTML5 · CSS3 · JavaScript ES Modules (no framework, no build step) |
+| Persistence | IndexedDB via native browser API |
+| Charts | [Chart.js 4](https://www.chartjs.org/) (CDN) |
+| Typography | Inter (Google Fonts) |
+| Icons | Flaticon Uicons |
+| Offline | Service Worker (network-first for app shell, cache-first for CDN assets) |
+| PWA | Web App Manifest |
 
-## 📁 Estructura
+## Architecture
+
+The app is a single-page application with a hash-based router. All state lives in IndexedDB — there is no server, no authentication and no external API call.
 
 ```
 kastos/
-├── index.html              # SPA principal (todas las vistas)
-├── sw.js                   # Service Worker (offline-first)
-├── manifest.webmanifest    # Metadatos PWA
-├── make_icons.py           # Generador de iconos PNG
+├── index.html              # SPA shell — all views and modals inline
+├── sw.js                   # Service Worker (offline-first caching strategy)
+├── manifest.webmanifest    # PWA metadata
+├── make_icons.py           # Pillow-based icon generator (no native deps)
 ├── css/
-│   └── styles.css          # Tema dark completo
+│   └── styles.css          # Design tokens, layout, components, dark theme
 ├── js/
-│   ├── db.js               # Capa IndexedDB (CRUD)
-│   ├── charts.js           # Gráficas Chart.js
-│   └── app.js              # Lógica principal + router SPA
-└── icons/                  # Iconos PWA (genera con make_icons.py)
+│   ├── db.js               # IndexedDB abstraction layer (CRUD + export/import)
+│   ├── charts.js           # Chart.js wrappers (bar, doughnut, line)
+│   └── app.js              # Router, view renderers, business logic
+└── icons/                  # PWA icons (192 · 512 · maskable · apple-touch · favicon)
 ```
 
-## 🚀 Uso local
+### IndexedDB schema (`kastos-db` v1)
+
+| Store | Key | Notable fields |
+|---|---|---|
+| `transactions` | autoIncrement `id` | `type`, `amount`, `description`, `categoryId`, `date`, `recurring` |
+| `categories` | autoIncrement `id` | `emoji`, `name`, `color`, `budget` |
+| `goals` | autoIncrement `id` | `name`, `target`, `saved`, `deadline`, `emoji` |
+| `settings` | inline key | `currency`, `userName`, `recurringApplied` |
+
+## Getting started
+
+Any static file server works. No build step is needed.
 
 ```bash
-# Servir localmente (cualquier servidor estático)
-npx serve .
-# o con Python
-python -m http.server 8080
+# Python (stdlib)
+python -m http.server 8080 --directory kastos/
+
+# Node.js
+npx serve kastos/
 ```
 
-Abre `http://localhost:8080` en el navegador.
+Then open `http://localhost:8080` in your browser.
 
-## 🖼️ Generar iconos
+### Regenerate icons
+
+The included icons were generated with [Pillow](https://python-pillow.org/) (no system-level dependencies required on Windows).
 
 ```bash
-pip install cairosvg pillow
+pip install pillow
 python make_icons.py
 ```
 
-## 🔒 Privacidad
+## Privacy
 
-Todos los datos se guardan **solo en este dispositivo** usando IndexedDB. Ningún dato se envía a ningún servidor. La app funciona completamente sin conexión una vez instalada.
+All data is stored exclusively in the browser's IndexedDB on the local device. No data is transmitted to any server. The application is fully functional without a network connection after the initial load.
+
+## License
+
+[MIT](LICENSE)
