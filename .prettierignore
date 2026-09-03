@@ -1,0 +1,6 @@
+dist/
+dev-dist/
+legacy/
+node_modules/
+docs/
+*.md

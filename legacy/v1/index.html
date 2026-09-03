@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Kastos · Finanzas del Hogar</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#30d158" />
+  <meta name="description" content="Gestiona los ingresos, gastos y ahorros de tu hogar. Todo local, sin registro, sin nube." />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-180.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Kastos" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Fuentes e iconos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════
+       TOPBAR
+  ══════════════════════════════════════════ -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">₭</span>
+      <span class="brand-name">Kastos</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="install-btn" class="btn btn-ghost small hidden" aria-label="Instalar app">
+        <i class="fi fi-rr-download"></i>
+      </button>
+      <button id="add-btn" class="btn btn-primary small" aria-label="Añadir movimiento">
+        <i class="fi fi-rr-plus"></i>
+        <span class="btn-label">Añadir</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       NAVEGACIÓN INFERIOR
+  ══════════════════════════════════════════ -->
+  <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
+    <button class="nav-item active" data-view="dashboard" aria-label="Dashboard">
+      <i class="fi fi-rr-home"></i>
+      <span>Inicio</span>
+    </button>
+    <button class="nav-item" data-view="movimientos" aria-label="Movimientos">
+      <i class="fi fi-rr-list"></i>
+      <span>Movimientos</span>
+    </button>
+    <button class="nav-item" data-view="categorias" aria-label="Categorías">
+      <i class="fi fi-rr-apps"></i>
+      <span>Categorías</span>
+    </button>
+    <button class="nav-item" data-view="metas" aria-label="Ahorro: metas y calculadora">
+      <i class="fi fi-rr-piggy-bank"></i>
+      <span>Ahorro</span>
+    </button>
+    <button class="nav-item" data-view="ajustes" aria-label="Ajustes">
+      <i class="fi fi-rr-settings"></i>
+      <span>Ajustes</span>
+    </button>
+  </nav>
+
+  <!-- ══════════════════════════════════════════
+       CONTENIDO PRINCIPAL
+  ══════════════════════════════════════════ -->
+  <main class="main-content">
+
+    <!-- ── VISTA: DASHBOARD ── -->
+    <section id="view-dashboard" class="view active">
+
+      <!-- Saludo + mes -->
+      <div class="dashboard-header">
+        <div>
+          <p class="greeting" id="greeting-text">Buenos días 👋</p>
+          <h2 class="month-label" id="month-label">Agosto 2026</h2>
+        </div>
+        <button class="month-nav" id="prev-month-btn" aria-label="Mes anterior">
+          <i class="fi fi-rr-angle-left"></i>
+        </button>
+        <button class="month-nav" id="next-month-btn" aria-label="Mes siguiente">
+          <i class="fi fi-rr-angle-right"></i>
+        </button>
+      </div>
+
+      <!-- Saldo principal -->
+      <div class="balance-card card">
+        <p class="balance-label">Saldo del mes</p>
+        <p class="balance-amount" id="balance-amount">+0,00 €</p>
+        <div class="balance-row">
+          <div class="balance-chip income">
+            <i class="fi fi-rr-arrow-small-up"></i>
+            <span id="total-income">0,00 €</span>
+            <small>ingresos</small>
+          </div>
+          <div class="balance-chip expense">
+            <i class="fi fi-rr-arrow-small-down"></i>
+            <span id="total-expense">0,00 €</span>
+            <small>gastos</small>
+          </div>
+          <div class="balance-chip savings">
+            <i class="fi fi-rr-piggy-bank"></i>
+            <span id="total-savings">0,00 €</span>
+            <small>ahorro</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfica mensual -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>Evolución</h3>
+          <span class="card-subtitle">Últimos 6 meses</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-evolution"></canvas>
+        </div>
+      </div>
+
+      <!-- Distribución por categoría -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>Gastos por categoría</h3>
+          <span class="card-subtitle" id="donut-month-label">Este mes</span>
+        </div>
+        <div class="chart-donut-wrap">
+          <canvas id="chart-donut"></canvas>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+
+      <!-- Gráfica ahorro acumulado -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>Ahorro acumulado</h3>
+          <span class="card-subtitle">Últimos 6 meses</span>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart-savings"></canvas>
+        </div>
+      </div>
+
+      <!-- Últimos movimientos -->
+      <div class="card">
+        <div class="card-header">
+          <h3>Últimos movimientos</h3>
+          <button class="link-btn" data-goto="movimientos">Ver todos</button>
+        </div>
+        <ul class="tx-list" id="recent-tx-list">
+          <li class="tx-empty">Aún no hay movimientos este mes.</li>
+        </ul>
+      </div>
+
+    </section>
+
+    <!-- ── VISTA: MOVIMIENTOS ── -->
+    <section id="view-movimientos" class="view">
+
+      <div class="view-header">
+        <div>
+          <h2>Movimientos</h2>
+          <p class="view-subtitle">Todo tu historial de ingresos y gastos. Toca uno para editarlo.</p>
+        </div>
+      </div>
+      <div class="filter-row">
+        <select id="filter-month" class="select-pill" aria-label="Filtrar por mes"></select>
+        <select id="filter-cat" class="select-pill" aria-label="Filtrar por categoría">
+          <option value="">Todas</option>
+        </select>
+        <select id="filter-type" class="select-pill" aria-label="Filtrar por tipo">
+          <option value="">Todos</option>
+          <option value="income">Ingresos</option>
+          <option value="expense">Gastos</option>
+        </select>
+      </div>
+
+      <ul class="tx-list full" id="all-tx-list">
+        <li class="tx-empty">Aún no hay movimientos.</li>
+      </ul>
+
+    </section>
+
+    <!-- ── VISTA: CATEGORÍAS ── -->
+    <section id="view-categorias" class="view">
+
+      <div class="view-header">
+        <div>
+          <h2>Categorías</h2>
+          <p class="view-subtitle">Organiza tus gastos y fija presupuestos mensuales.</p>
+        </div>
+        <button class="btn btn-primary small" id="add-cat-btn">
+          <i class="fi fi-rr-plus"></i> Nueva
+        </button>
+      </div>
+
+      <ul class="cat-list" id="cat-list">
+        <li class="tx-empty">No hay categorías aún.</li>
+      </ul>
+
+    </section>
+
+    <!-- ── VISTA: AHORRO (metas + calculadora) ── -->
+    <section id="view-metas" class="view">
+
+      <div class="view-header">
+        <div>
+          <h2>Ahorro</h2>
+          <p class="view-subtitle">Define metas y proyecta cuánto puedes ahorrar.</p>
+        </div>
+        <button class="btn btn-primary small" id="add-goal-btn">
+          <i class="fi fi-rr-plus"></i> Nueva meta
+        </button>
+      </div>
+
+      <div class="segmented" role="tablist" aria-label="Secciones de ahorro">
+        <button class="seg-btn active" data-seg="metas" role="tab" aria-selected="true">🎯 Mis metas</button>
+        <button class="seg-btn" data-seg="calc" role="tab" aria-selected="false">📈 Calculadora</button>
+      </div>
+
+      <div id="seg-metas" role="tabpanel">
+        <ul class="goal-list" id="goal-list">
+          <li class="tx-empty">Aún no tienes metas definidas.</li>
+        </ul>
+      </div>
+
+      <div id="seg-calc" class="hidden" role="tabpanel">
+        <div class="card calc-card">
+          <p class="calc-intro">
+            Calcula cuánto podría crecer tu dinero en unos años gracias al
+            <strong>interés compuesto</strong>: los intereses que generas también generan intereses.
+          </p>
+
+          <div class="form-group">
+            <label for="calc-initial">Ahorro inicial</label>
+            <div class="amount-input-wrap">
+              <span class="currency-symbol" id="calc-currency-symbol">€</span>
+              <input id="calc-initial" type="number" min="0" step="100" value="1000" inputmode="decimal" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="calc-monthly">Aportación mensual</label>
+            <div class="amount-input-wrap">
+              <span class="currency-symbol">€</span>
+              <input id="calc-monthly" type="number" min="0" step="10" value="100" inputmode="decimal" />
+            </div>
+          </div>
+
+          <div class="calc-grid">
+            <div class="form-group">
+              <label for="calc-rate">Interés anual (%)</label>
+              <input id="calc-rate" type="number" min="0" max="30" step="0.1" value="5" inputmode="decimal" />
+            </div>
+            <div class="form-group">
+              <label for="calc-years">Años</label>
+              <input id="calc-years" type="number" min="1" max="50" step="1" value="10" inputmode="numeric" />
+            </div>
+          </div>
+
+          <div class="calc-result">
+            <p class="calc-result-label">En <span id="calc-years-label">10</span> años tendrías</p>
+            <p class="calc-result-amount" id="calc-total">0,00 €</p>
+            <div class="calc-breakdown">
+              <div class="calc-chip">
+                <small>Aportado por ti</small>
+                <span id="calc-contributed">0,00 €</span>
+              </div>
+              <div class="calc-chip interest">
+                <small>Intereses generados</small>
+                <span id="calc-interest">0,00 €</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-wrap calc-chart">
+            <canvas id="chart-projection"></canvas>
+          </div>
+          <p class="calc-disclaimer">Cálculo orientativo con capitalización mensual. La rentabilidad real puede variar.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── VISTA: AJUSTES ── -->
+    <section id="view-ajustes" class="view">
+
+      <div class="view-header">
+        <div>
+          <h2>Ajustes</h2>
+          <p class="view-subtitle">Personaliza la app y gestiona tus datos.</p>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <h4>General</h4>
+        <label class="settings-row">
+          <span>Moneda</span>
+          <select id="currency-select" class="select-pill">
+            <option value="EUR">€ Euro</option>
+            <option value="USD">$ Dólar</option>
+            <option value="GBP">£ Libra</option>
+            <option value="MXN">$ Peso MX</option>
+          </select>
+        </label>
+        <label class="settings-row">
+          <span>Nombre</span>
+          <input id="user-name" type="text" class="input-inline" placeholder="Tu nombre" maxlength="24" />
+        </label>
+      </div>
+
+      <div class="settings-group">
+        <h4>Datos</h4>
+        <button class="settings-btn" id="export-json-btn">
+          <i class="fi fi-rr-download"></i> Exportar datos (JSON)
+        </button>
+        <button class="settings-btn" id="export-csv-btn">
+          <i class="fi fi-rr-file-spreadsheet"></i> Exportar movimientos (CSV)
+        </button>
+        <label class="settings-btn" for="import-file-input">
+          <i class="fi fi-rr-upload"></i> Importar datos (JSON)
+        </label>
+        <input id="import-file-input" type="file" accept=".json" class="hidden" />
+      </div>
+
+      <div class="settings-group">
+        <h4>Gastos recurrentes</h4>
+        <ul class="recurring-list" id="recurring-list">
+          <li class="tx-empty" style="padding:14px 18px">No hay gastos recurrentes.</li>
+        </ul>
+        <button class="settings-btn" id="apply-recurring-btn">
+          <i class="fi fi-rr-refresh"></i> Crear los de este mes ahora
+        </button>
+      </div>
+
+      <div class="settings-group danger-zone">
+        <h4>Zona peligrosa</h4>
+        <button class="settings-btn danger" id="reset-btn">
+          <i class="fi fi-rr-trash"></i> Borrar todos los datos
+        </button>
+      </div>
+
+      <div class="settings-group">
+        <h4>Acerca de Kastos</h4>
+        <p class="about-text">
+          Kastos es tu gestor de finanzas personales y del hogar: apunta tus ingresos
+          y gastos, organízalos por categorías con presupuesto, crea metas de ahorro
+          y visualiza tu evolución con gráficas.
+          <br><br>
+          <strong>100% privado:</strong> todos los datos se guardan solo en este
+          dispositivo. No hay registro, ni nube, ni servidores.
+        </p>
+        <button class="settings-btn" id="show-welcome-btn">
+          <i class="fi fi-rr-interrogation"></i> Ver la guía de bienvenida
+        </button>
+      </div>
+
+      <p class="settings-footer">
+        Kastos v1.1 · Hecho con ❤️ para tu economía doméstica.
+      </p>
+
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       MODAL: AÑADIR / EDITAR MOVIMIENTO
+  ══════════════════════════════════════════ -->
+  <div id="modal-tx" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-tx-title">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title" id="modal-tx-title">Nuevo movimiento</h3>
+
+      <!-- Tipo: ingreso / gasto -->
+      <div class="type-toggle">
+        <button class="type-btn active" data-type="expense">
+          <i class="fi fi-rr-arrow-small-down"></i> Gasto
+        </button>
+        <button class="type-btn" data-type="income">
+          <i class="fi fi-rr-arrow-small-up"></i> Ingreso
+        </button>
+      </div>
+
+      <div class="form-group">
+        <label for="tx-amount">Importe</label>
+        <div class="amount-input-wrap">
+          <span class="currency-symbol" id="modal-currency-symbol">€</span>
+          <input id="tx-amount" type="number" min="0.01" step="0.01" placeholder="0,00" inputmode="decimal" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="tx-desc">Descripción</label>
+        <input id="tx-desc" type="text" placeholder="Ej: Mercadona, Nómina…" maxlength="60" />
+      </div>
+
+      <div class="form-group">
+        <label for="tx-cat">Categoría</label>
+        <select id="tx-cat"></select>
+      </div>
+
+      <div class="form-group">
+        <label for="tx-date">Fecha</label>
+        <input id="tx-date" type="date" />
+      </div>
+
+      <div class="form-group">
+        <label for="tx-note">Nota (opcional)</label>
+        <input id="tx-note" type="text" placeholder="Nota adicional" maxlength="120" />
+      </div>
+
+      <label class="toggle-row">
+        <span>Gasto recurrente</span>
+        <div class="toggle-wrap">
+          <input id="tx-recurring" type="checkbox" class="toggle-input" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </div>
+      </label>
+      <p class="toggle-hint hidden" id="tx-recurring-hint">Se creará automáticamente cada mes.</p>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-tx-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-tx-save">Guardar</button>
+      </div>
+
+      <input type="hidden" id="tx-edit-id" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MODAL: AÑADIR / EDITAR CATEGORÍA
+  ══════════════════════════════════════════ -->
+  <div id="modal-cat" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-cat-title">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title" id="modal-cat-title">Nueva categoría</h3>
+
+      <div class="form-group">
+        <label for="cat-emoji">Emoji</label>
+        <input id="cat-emoji" type="text" placeholder="🛒" maxlength="2" class="emoji-input" />
+      </div>
+
+      <div class="form-group">
+        <label for="cat-name">Nombre</label>
+        <input id="cat-name" type="text" placeholder="Ej: Alimentación" maxlength="30" />
+      </div>
+
+      <div class="form-group">
+        <label>Color</label>
+        <div class="color-picker" id="cat-color-picker"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="cat-budget">Presupuesto mensual (opcional)</label>
+        <div class="amount-input-wrap">
+          <span class="currency-symbol" id="cat-currency-symbol">€</span>
+          <input id="cat-budget" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal" />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-cat-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-cat-save">Guardar</button>
+      </div>
+
+      <input type="hidden" id="cat-edit-id" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MODAL: AÑADIR / EDITAR META
+  ══════════════════════════════════════════ -->
+  <div id="modal-goal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-goal-title">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 class="modal-title" id="modal-goal-title">Nueva meta</h3>
+
+      <div class="form-group">
+        <label for="goal-name">Nombre de la meta</label>
+        <input id="goal-name" type="text" placeholder="Ej: Vacaciones de verano" maxlength="50" />
+      </div>
+
+      <div class="form-group">
+        <label for="goal-target">Objetivo (€)</label>
+        <div class="amount-input-wrap">
+          <span class="currency-symbol" id="goal-currency-symbol">€</span>
+          <input id="goal-target" type="number" min="1" step="0.01" placeholder="0,00" inputmode="decimal" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="goal-saved">Ya ahorrado (€)</label>
+        <div class="amount-input-wrap">
+          <span class="currency-symbol">€</span>
+          <input id="goal-saved" type="number" min="0" step="0.01" placeholder="0,00" inputmode="decimal" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="goal-deadline">Fecha límite</label>
+        <input id="goal-deadline" type="date" />
+      </div>
+
+      <div class="form-group">
+        <label for="goal-emoji">Emoji</label>
+        <input id="goal-emoji" type="text" placeholder="🏖️" maxlength="2" class="emoji-input" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="modal-goal-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="modal-goal-save">Guardar</button>
+      </div>
+
+      <input type="hidden" id="goal-edit-id" />
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       MODAL: BIENVENIDA (primer arranque)
+  ══════════════════════════════════════════ -->
+  <div id="modal-welcome" class="modal-overlay centered hidden" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+    <div class="welcome-card">
+      <span class="welcome-logo">₭</span>
+      <h3 id="welcome-title">Bienvenido a Kastos</h3>
+      <p class="welcome-tagline">Tu economía doméstica, clara y bajo control.</p>
+
+      <ul class="welcome-features">
+        <li>
+          <span class="welcome-emoji">✏️</span>
+          <div>
+            <strong>Apunta tus movimientos</strong>
+            <p>Usa el botón «Añadir» para registrar cualquier ingreso o gasto en segundos.</p>
+          </div>
+        </li>
+        <li>
+          <span class="welcome-emoji">📊</span>
+          <div>
+            <strong>Entiende tu dinero</strong>
+            <p>En Inicio verás tu saldo del mes, gráficas y en qué categorías gastas más.</p>
+          </div>
+        </li>
+        <li>
+          <span class="welcome-emoji">🐷</span>
+          <div>
+            <strong>Ahorra con cabeza</strong>
+            <p>Crea metas de ahorro y usa la calculadora para proyectar tu futuro.</p>
+          </div>
+        </li>
+        <li>
+          <span class="welcome-emoji">🔒</span>
+          <div>
+            <strong>Solo tuyo</strong>
+            <p>Todo se guarda en tu dispositivo. Sin registro, sin nube, sin anuncios.</p>
+          </div>
+        </li>
+      </ul>
+
+      <button class="btn btn-primary welcome-cta" id="welcome-start-btn">¡Empezar!</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       TOAST
+  ══════════════════════════════════════════ -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script type="module" src="js/db.js"></script>
+  <script type="module" src="js/charts.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
