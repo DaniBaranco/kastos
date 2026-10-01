@@ -11,10 +11,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/favicon-32.png', 'icons/apple-touch-180.png'],
       manifest: {
-        name: 'Kastos — Ahorro personal',
+        name: 'Kastos — Hipoteca y gastos',
         short_name: 'Kastos',
         description:
-          'Descubre cuánto puedes ahorrar, sigue tu progreso y planifica tus objetivos. Todo local, sin registro, sin nube.',
+          'Controla tu hipoteca (cuota, intereses, fecha de fin) y tus gastos de casa mes a mes, con histórico y comparativas. Todo local, sin registro, sin nube.',
         lang: 'es',
         display: 'standalone',
         orientation: 'portrait-primary',

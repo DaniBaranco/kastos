@@ -1,8 +1,9 @@
 # Kastos
 
-> Tu **bolsa de ahorro** con un plan, 100 % local. Registra lo que apartas,
-> márcate un patrón mensual, simula escenarios y comprueba si llegas a tus
-> objetivos. Sin gastos, sin categorías, sin contabilidad: solo ahorro.
+> Tu **hipoteca** y los **gastos de casa**, bajo control y 100 % local.
+> Guarda tu préstamo para saber cuánto pagarás, cuánto te queda y cuándo
+> terminas; apunta tus facturas mes a mes y compara en el histórico en qué
+> meses pagas más luz, gas o agua.
 
 [![Live](https://img.shields.io/badge/demo-live-brightgreen)](https://danibaranco.github.io/kastos/)
 ![PWA](https://img.shields.io/badge/PWA-offline--ready-blueviolet)
@@ -10,25 +11,25 @@
 
 ## La dinámica
 
-1. **Mi ahorro** — Tu bolsa: aportaciones y retiradas mes a mes, tu ritmo real
-   y la evolución del acumulado. Todo usuario **parte de 0**; si ya tienes
-   ahorros, los añades como *punto de partida*: suman a la bolsa pero no cuentan
-   como ahorro del mes ni distorsionan tu ritmo. Todo queda registrado en el
-   dispositivo: vuelves a la app y tus datos siguen ahí, listos para
-   actualizarlos.
-2. **Patrones de ahorro** — Decide cuánto quieres apartar cada mes ("Base:
-   150 €/mes", "Ambicioso: 300 €/mes", con interés anual opcional). El patrón
-   activo es tu compromiso: Kastos mide cada mes si lo cumples.
-3. **Simulación** — Compara escenarios: ¿dónde estará tu bolsa en 1, 2, 5 o 10
-   años con cada patrón? (capitalización mensual, con desglose aportado vs.
-   intereses).
-4. **Objetivos** — Boda, coche, colchón… con importe y fecha. Kastos calcula la
-   cuota mensual necesaria y la compara con tu patrón: *en camino / ajustado /
-   inalcanzable*, con fecha alternativa realista si no llegas.
+1. **Hipoteca** — Capital, TIN, plazo y mes de la primera cuota. Kastos genera
+   el cuadro de amortización (sistema francés) y te muestra la cuota, el capital
+   pendiente, los intereses pagados y pendientes, el total a pagar y la fecha de
+   fin. Registra **revisiones de tipo** (variables/mixtas) y **amortizaciones
+   anticipadas** (reduciendo plazo o cuota) y verás cuánto te ahorran. Cuadro
+   por años o por meses, con gráficas y export CSV. Admite varias hipotecas.
+2. **Gastos** — Control mes a mes: luz, gas, agua, comunidad, seguros… en
+   categorías personalizables. La cuota de la hipoteca se suma sola a cada mes
+   (opcional). Comparativa con el mes anterior y con el mismo mes del año
+   pasado, y botón para copiar los gastos del mes anterior.
+3. **Histórico** — Evolución mes a mes, comparativa año contra año,
+   **estacionalidad** (media de cada mes natural: "pagas más gas en enero") y
+   tabla categoría × mes. Filtrable por categoría y periodo.
+4. **Interés compuesto** — Calculadora independiente: capital inicial,
+   aportación mensual, interés y plazo, con desglose aportado vs. intereses.
 
 Además: export JSON/CSV, **import con migración automática desde versiones
-anteriores** (v1 y v2), recordatorio de copia de seguridad y tema
-claro/oscuro/sistema.
+anteriores** (de la v1 se recuperan los gastos; de las v2/v3 de ahorro, los
+ajustes), recordatorio de copia de seguridad y tema claro/oscuro/sistema.
 
 ## Stack
 
@@ -50,8 +51,8 @@ claro/oscuro/sistema.
 - **Motor de cálculo puro** (`src/lib/core/`): sin DOM, sin Dexie, 100 % testeado.
   La UI nunca calcula dinero.
 - **Fechas civiles locales**: `YYYY-MM-DD` / `YYYY-MM`, sin timezones.
-- **Esquema versionado**: exports con `schemaVersion: 3`; el import valida antes
-  de escribir (un archivo corrupto no toca tus datos) y migra exports v1/v2.
+- **Esquema versionado**: exports con `schemaVersion: 4`; el import valida antes
+  de escribir (un archivo corrupto no toca tus datos) y migra exports v1/v2/v3.
 
 ## Desarrollo
 
@@ -73,13 +74,13 @@ src/
 ├── App.svelte              # shell: tabs, tema, bienvenida
 ├── app.css                 # design tokens + base (light/dark)
 ├── lib/
-│   ├── core/               # motor puro + tests (dinero, fechas, bolsa de
-│   │                       #   ahorro, simulación de patrones, objetivos,
-│   │                       #   migradores v1/v2 → v3)
+│   ├── core/               # motor puro + tests (dinero, fechas, hipoteca
+│   │                       #   y amortización, gastos e histórico, interés
+│   │                       #   compuesto, migradores v1/v2/v3 → v4)
 │   ├── db/                 # Dexie + repositorios
 │   ├── stores/             # estado global (runes) y toasts
 │   ├── components/         # Modal, TabBar, formularios, gráficas…
-│   ├── views/              # Mi ahorro · Simulación · Objetivos · Ajustes
+│   ├── views/              # Hipoteca · Gastos · Histórico · Interés · Ajustes
 │   ├── export/             # CSV + descarga de ficheros
 │   └── i18n/es.ts          # strings centralizados
 docs/v1-schema.md           # análisis del esquema y lógica de v1
@@ -91,10 +92,10 @@ legacy/v1/                  # código de la v1 (referencia)
 Todo se guarda automáticamente en IndexedDB: al volver a la app, los datos
 introducidos siguen ahí para consultarlos o actualizarlos. Para copias de
 seguridad o cambio de dispositivo: Ajustes → *Exportar todo (JSON)* /
-*Importar datos (JSON)*. El import acepta copias de cualquier versión: de
-v1/v2 se conservan el ahorro registrado y los objetivos (el `saved` de cada
-meta v1 se convierte en aportación inicial); los movimientos de gastos e
-ingresos de versiones antiguas se descartan porque la app ya no los modela.
+*Importar datos (JSON)*. El import acepta copias de cualquier versión: de la
+v1 se recuperan los gastos (cada movimiento pasa a su mes y categoría); las
+versiones de ahorro (v2/v3) solo aportan los ajustes, porque la bolsa de
+ahorro, los patrones y los objetivos ya no existen en la app.
 Detalles del esquema v1 en [docs/v1-schema.md](docs/v1-schema.md).
 
 ## Privacidad

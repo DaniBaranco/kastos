@@ -1,5 +1,5 @@
 <script module lang="ts">
-  export type TabId = 'home' | 'simulation' | 'goals' | 'settings';
+  export type TabId = 'mortgage' | 'expenses' | 'history' | 'interest' | 'settings';
 </script>
 
 <script lang="ts">
@@ -14,9 +14,10 @@
 
   // Iconos: Flaticon UIcons (regular rounded).
   const tabs: { id: TabId; label: string; icon: string }[] = [
-    { id: 'home', label: t.tabs.home, icon: 'fi-rr-piggy-bank' },
-    { id: 'simulation', label: t.tabs.simulation, icon: 'fi-rr-chart-line-up' },
-    { id: 'goals', label: t.tabs.goals, icon: 'fi-rr-target' },
+    { id: 'mortgage', label: t.tabs.mortgage, icon: 'fi-rr-home' },
+    { id: 'expenses', label: t.tabs.expenses, icon: 'fi-rr-receipt' },
+    { id: 'history', label: t.tabs.history, icon: 'fi-rr-chart-histogram' },
+    { id: 'interest', label: t.tabs.interest, icon: 'fi-rr-chart-line-up' },
     { id: 'settings', label: t.tabs.settings, icon: 'fi-rr-settings' },
   ];
 </script>
@@ -54,8 +55,8 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    min-width: 62px;
-    padding: 6px 12px;
+    min-width: 56px;
+    padding: 6px 8px;
     border-radius: var(--radius-sm);
     color: var(--ink-faint);
     font-size: 10.5px;

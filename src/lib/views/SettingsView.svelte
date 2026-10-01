@@ -2,15 +2,30 @@
   import { t } from '../i18n/es';
   import { app } from '../stores/app.svelte';
   import { toast } from '../stores/toast.svelte';
-  import { downloadFile, savingsCSV } from '../export/csv';
+  import { downloadFile, expensesCSV } from '../export/csv';
   import { ImportError } from '../core/migrate';
   import { todayISO } from '../core/dates';
-  import type { Currency, Theme } from '../core/types';
+  import type { Currency, ExpenseCategory, Theme } from '../core/types';
+  import CategoryForm from '../components/CategoryForm.svelte';
 
   interface Props {
     onshowwelcome: () => void;
   }
   let { onshowwelcome }: Props = $props();
+
+  let catOpen = $state(false);
+  let editingCat = $state<ExpenseCategory | null>(null);
+
+  const sortedCategories = $derived(
+    [...app.categories].sort(
+      (a, b) => Number(a.archived) - Number(b.archived) || a.name.localeCompare(b.name, 'es'),
+    ),
+  );
+
+  function openCategory(c: ExpenseCategory | null) {
+    editingCat = c;
+    catOpen = true;
+  }
 
   async function exportJSON() {
     const bundle = app.buildExport();
@@ -23,11 +38,11 @@
     toast.show(t.toasts.exported);
   }
 
-  function exportSavings() {
+  function exportExpenses() {
     downloadFile(
-      `kastos-ahorro-${todayISO()}.csv`,
-      savingsCSV(app.savingsEntries, app.goals),
-      'text/csv',
+      `kastos-gastos-${todayISO()}.csv`,
+      expensesCSV(app.expenses, app.categories),
+      'text/csv;charset=utf-8',
     );
     toast.show(t.toasts.exported);
   }
@@ -40,7 +55,7 @@
     try {
       const text = await file.text();
       const source = await app.importJSON(text);
-      toast.show(source === 'v3' ? t.settings.importOk : t.settings.importedFromOld);
+      toast.show(source === 'v4' ? t.settings.importOk : t.settings.importedFromOld);
     } catch (err) {
       const detail = err instanceof ImportError ? ` ${err.message}` : '';
       toast.show(`${t.toasts.importError}.${detail}`, 'err');
@@ -111,6 +126,29 @@
     </section>
 
     <section class="card">
+      <div class="spread">
+        <h2>{t.settings.categories}</h2>
+        <button class="btn btn-ghost small" onclick={() => openCategory(null)}>
+          <i class="fi fi-rr-plus" aria-hidden="true"></i>
+          {t.settings.newCategory}
+        </button>
+      </div>
+      <p class="card-note">{t.settings.categoriesHint}</p>
+      <ul class="row-list">
+        {#each sortedCategories as c (c.id)}
+          <li class:archived={c.archived}>
+            <span class="row-emoji" aria-hidden="true">{c.emoji}</span>
+            <button class="row-main cat-btn" onclick={() => openCategory(c)}>
+              <span class="row-title">{c.name}</span>
+              {#if c.archived}<span class="row-sub">{t.settings.archivedTag}</span>{/if}
+            </button>
+            <i class="fi fi-rr-angle-small-right muted" aria-hidden="true"></i>
+          </li>
+        {/each}
+      </ul>
+    </section>
+
+    <section class="card">
       <h2>{t.settings.about}</h2>
       <p class="card-note">{t.settings.aboutText}</p>
       <button class="btn btn-ghost small" style="margin-top: 12px" onclick={onshowwelcome}>
@@ -142,9 +180,9 @@
         <button class="btn btn-ghost" onclick={exportJSON}
           ><i class="fi fi-rr-download" aria-hidden="true"></i> {t.settings.exportJSON}</button
         >
-        <button class="btn btn-ghost" onclick={exportSavings}
+        <button class="btn btn-ghost" onclick={exportExpenses}
           ><i class="fi fi-rr-download" aria-hidden="true"></i>
-          {t.settings.exportSavingsCSV}</button
+          {t.settings.exportExpensesCSV}</button
         >
         <label class="btn btn-ghost import-label">
           <i class="fi fi-rr-upload" aria-hidden="true"></i>
@@ -164,7 +202,19 @@
   </div>
 </div>
 
+<CategoryForm open={catOpen} category={editingCat} onclose={() => (catOpen = false)} />
+
 <style>
+  .cat-btn {
+    text-align: left;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  li.archived {
+    opacity: 0.6;
+  }
   .data-actions {
     display: flex;
     flex-direction: column;

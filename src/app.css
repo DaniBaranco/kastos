@@ -371,6 +371,7 @@ i.fi::before {
   font-size: 13.5px;
   font-weight: 650;
   color: var(--ink-soft);
+  white-space: nowrap;
   transition:
     background 0.18s var(--ease),
     color 0.18s var(--ease);
@@ -463,6 +464,10 @@ i.fi::before {
 .row-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  color: inherit;
+  font: inherit;
 }
 .row-title {
   font-size: 14.5px;
@@ -553,6 +558,114 @@ i.fi::before {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
+}
+
+/* ── Mini estadísticas en rejilla ── */
+.mini-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0 16px;
+}
+.mini-grid > div {
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.mini-label {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mini-value {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mini-hint {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
+/* ── Tablas de datos ── */
+.table-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.data-table th,
+.data-table td {
+  padding: 8px 8px;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+.data-table th:first-child,
+.data-table td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+}
+.data-table thead th {
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.data-table tr.is-current td {
+  font-weight: 700;
+}
+.data-table tfoot td {
+  font-weight: 700;
+  border-top: 1px solid var(--border-strong);
+  border-bottom: none;
+}
+
+/* ── Selectores tipo chip ── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  padding: 7px 13px;
+  border-radius: var(--radius-pill);
+  background: var(--bg);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.chip[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ── Variaciones (siempre con signo y texto, no solo color) ── */
+.delta-up {
+  color: var(--danger);
+}
+.delta-down {
+  color: var(--positive);
 }
 
 /* ── Utilidades ── */

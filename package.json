@@ -1,9 +1,9 @@
 {
   "name": "kastos",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
-  "description": "Kastos v2 — app de ahorro personal: capacidad, seguimiento, proyección y objetivos. 100% local.",
+  "description": "Kastos v3 — hipoteca y gastos del hogar: cuadro de amortización, control mensual e histórico comparativo. 100% local.",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

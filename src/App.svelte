@@ -6,12 +6,13 @@
   import { t } from './lib/i18n/es';
   import TabBar, { type TabId } from './lib/components/TabBar.svelte';
   import Toast from './lib/components/Toast.svelte';
-  import HomeView from './lib/views/HomeView.svelte';
+  import MortgageView from './lib/views/MortgageView.svelte';
+  import ExpensesView from './lib/views/ExpensesView.svelte';
+  import HistoryView from './lib/views/HistoryView.svelte';
   import SimulationView from './lib/views/SimulationView.svelte';
-  import GoalsView from './lib/views/GoalsView.svelte';
   import SettingsView from './lib/views/SettingsView.svelte';
 
-  let tab = $state<TabId>('home');
+  let tab = $state<TabId>('mortgage');
   let welcomeOpen = $state(false);
 
   onMount(() => {
@@ -48,12 +49,14 @@
   {#if app.ready}
     {#key tab}
       <div class="view-enter">
-        {#if tab === 'home'}
-          <HomeView />
-        {:else if tab === 'simulation'}
+        {#if tab === 'mortgage'}
+          <MortgageView />
+        {:else if tab === 'expenses'}
+          <ExpensesView />
+        {:else if tab === 'history'}
+          <HistoryView />
+        {:else if tab === 'interest'}
           <SimulationView />
-        {:else if tab === 'goals'}
-          <GoalsView />
         {:else}
           <SettingsView onshowwelcome={() => (welcomeOpen = true)} />
         {/if}

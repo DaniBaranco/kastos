@@ -1,55 +1,67 @@
-// Modelo de datos de Kastos v2 (concepto "bolsa de ahorro").
+// Modelo de datos de Kastos v3 (hipoteca + gastos del hogar).
 // Regla de oro: los importes son SIEMPRE céntimos enteros (number).
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export type Currency = 'EUR' | 'USD' | 'GBP' | 'MXN';
 export type Theme = 'light' | 'dark' | 'system';
 
-/** Aportación o retirada de la bolsa de ahorro. */
-export interface SavingsEntry {
+/** Revisión del tipo de interés (hipotecas variables/mixtas, Euríbor…). */
+export interface RateChange {
   id: string;
-  /** YYYY-MM; puede haber varias entradas por mes. */
-  month: string;
-  /** Positivo = aportación; negativo = retirada. */
-  amountCents: number;
-  /**
-   * Punto de partida: ahorro que el usuario YA tenía al empezar con la app.
-   * Suma a la bolsa, pero no cuenta como aportación "del mes" ni entra en el
-   * cálculo del ritmo (todo usuario parte de 0 en cuanto a ritmo mensual).
-   */
-  initial?: boolean;
-  /** Aportación asignada a un objetivo concreto. */
-  goalId?: string;
-  note?: string;
-  createdAt: string;
+  /** YYYY-MM: primera cuota a la que se aplica el nuevo tipo. */
+  fromMonth: string;
+  annualRatePct: number;
 }
 
 /**
- * Patrón de ahorro: cuánto quiere apartar el usuario cada mes.
- * Puede haber varios (escenarios para simular); como máximo uno activo,
- * que es el compromiso contra el que se mide el mes y los objetivos.
+ * Amortización anticipada: pago extra de capital tras la cuota de ese mes.
+ * - `term`: se mantiene la cuota y se acorta el plazo.
+ * - `payment`: se mantiene el plazo y baja la cuota.
  */
-export interface SavingsPattern {
+export interface Prepayment {
   id: string;
-  name: string;
-  emoji: string;
-  /** Aportación mensual del patrón. */
-  monthlyCents: number;
-  /** Interés anual estimado (%) para simulaciones; 0 = hucha sin rendimiento. */
-  annualRatePct: number;
-  active: boolean;
+  month: string;
+  amountCents: number;
+  mode: 'term' | 'payment';
 }
 
-export interface SavingsGoal {
+/** Préstamo hipotecario con sistema de amortización francés (cuota constante). */
+export interface Mortgage {
+  id: string;
+  name: string;
+  /** Capital prestado. */
+  principalCents: number;
+  /** Tipo de interés nominal anual (TIN) inicial, en %. */
+  annualRatePct: number;
+  /** Plazo total en meses (número de cuotas). */
+  termMonths: number;
+  /** YYYY-MM de la primera cuota. */
+  startMonth: string;
+  rateChanges: RateChange[];
+  prepayments: Prepayment[];
+  /** Sumar la cuota a los gastos de cada mes. */
+  includeInExpenses: boolean;
+  createdAt: string;
+}
+
+export interface ExpenseCategory {
   id: string;
   name: string;
   emoji: string;
-  targetCents: number;
-  /** YYYY-MM-DD, obligatorio: sin fecha no hay plan. */
-  deadline: string;
+  /** Archivada: no se ofrece para gastos nuevos, pero conserva su histórico. */
   archived: boolean;
-  // savedCents NO se almacena: se deriva de SavingsEntry con goalId.
+}
+
+/** Gasto de un mes (puede haber varios por mes y categoría: p. ej. dos facturas). */
+export interface Expense {
+  id: string;
+  /** YYYY-MM al que se imputa. */
+  month: string;
+  categoryId: string;
+  amountCents: number;
+  note?: string;
+  createdAt: string;
 }
 
 export interface Settings {
@@ -61,6 +73,8 @@ export interface Settings {
   lastExportAt?: string;
   /** La guía de bienvenida ya se mostró. */
   welcomeSeen?: boolean;
+  /** Las categorías por defecto ya se sembraron (no volver a crearlas). */
+  categoriesSeeded?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -69,12 +83,26 @@ export const DEFAULT_SETTINGS: Settings = {
   schemaVersion: SCHEMA_VERSION,
 };
 
-/** Formato del export/import JSON (schemaVersion 3). */
+/** Categorías iniciales: los gastos típicos de un hogar. */
+export const DEFAULT_CATEGORIES: ReadonlyArray<Pick<ExpenseCategory, 'name' | 'emoji'>> = [
+  { name: 'Luz', emoji: '⚡' },
+  { name: 'Gas', emoji: '🔥' },
+  { name: 'Agua', emoji: '💧' },
+  { name: 'Internet y móvil', emoji: '📶' },
+  { name: 'Comunidad', emoji: '🏢' },
+  { name: 'Seguros', emoji: '🛡️' },
+  { name: 'Impuestos (IBI…)', emoji: '🧾' },
+  { name: 'Alimentación', emoji: '🛒' },
+  { name: 'Transporte', emoji: '🚗' },
+  { name: 'Otros', emoji: '📦' },
+];
+
+/** Formato del export/import JSON (schemaVersion 4). */
 export interface ExportBundle {
   schemaVersion: number;
   exportedAt: string;
-  savingsEntries: SavingsEntry[];
-  patterns: SavingsPattern[];
-  goals: SavingsGoal[];
+  mortgages: Mortgage[];
+  categories: ExpenseCategory[];
+  expenses: Expense[];
   settings: Settings;
 }

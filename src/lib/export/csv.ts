@@ -1,6 +1,7 @@
 // Export CSV es-ES: separador ";", BOM UTF-8, decimales con coma.
 
-import type { SavingsEntry, SavingsGoal } from '../core/types';
+import type { Expense, ExpenseCategory, Mortgage } from '../core/types';
+import type { MortgageSchedule } from '../core/mortgage';
 
 function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
@@ -10,21 +11,50 @@ function csvAmount(cents: number): string {
   return (cents / 100).toFixed(2).replace('.', ',');
 }
 
-export function savingsCSV(entries: SavingsEntry[], goals: SavingsGoal[]): string {
-  const goalById = new Map(goals.map((g) => [g.id, g]));
-  const header = ['Mes', 'Importe', 'Objetivo', 'Nota'].join(';');
-  const rows = [...entries]
+function csv(header: string[], rows: string[][]): string {
+  return '\uFEFF' + [header.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
+}
+
+export function expensesCSV(expenses: Expense[], categories: ExpenseCategory[]): string {
+  const catById = new Map(categories.map((c) => [c.id, c]));
+  const rows = [...expenses]
     .sort((a, b) => b.month.localeCompare(a.month))
     .map((e) => {
-      const goal = e.goalId !== undefined ? goalById.get(e.goalId) : undefined;
+      const cat = catById.get(e.categoryId);
       return [
         e.month,
+        csvCell(cat ? `${cat.emoji} ${cat.name}` : ''),
         csvAmount(e.amountCents),
-        csvCell(goal ? `${goal.emoji} ${goal.name}` : ''),
         csvCell(e.note ?? ''),
-      ].join(';');
+      ];
     });
-  return '﻿' + [header, ...rows].join('\n');
+  return csv(['Mes', 'Categoría', 'Importe', 'Nota'], rows);
+}
+
+export function scheduleCSV(m: Mortgage, s: MortgageSchedule): string {
+  const rows = s.rows.map((r) => [
+    String(r.n),
+    r.month,
+    r.ratePct.toLocaleString('es-ES'),
+    csvAmount(r.paymentCents),
+    csvAmount(r.interestCents),
+    csvAmount(r.principalCents),
+    csvAmount(r.extraCents),
+    csvAmount(r.balanceCents),
+  ]);
+  return csv(
+    [
+      'Cuota',
+      'Mes',
+      'TIN %',
+      'Cuota (€)',
+      'Intereses',
+      'Capital',
+      'Amortización extra',
+      `Pendiente (${m.name.replace(/;/g, ',')})`,
+    ],
+    rows,
+  );
 }
 
 export function downloadFile(name: string, content: string, type: string): void {

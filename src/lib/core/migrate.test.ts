@@ -3,9 +3,9 @@ import {
   detectSchema,
   importAny,
   ImportError,
+  migrateSettingsOnly,
   migrateV1,
-  migrateV2,
-  validateV3Bundle,
+  validateV4Bundle,
 } from './migrate';
 import { SCHEMA_VERSION, type ExportBundle } from './types';
 
@@ -19,84 +19,81 @@ const deps = {
 const V1_EXPORT = {
   transactions: [
     { id: 1, type: 'income', amount: 2000, description: 'Nómina', date: '2026-08-28' },
-    { id: 2, type: 'expense', amount: 42.5, description: 'Mercadona', date: '2026-09-01' },
+    {
+      id: 2,
+      type: 'expense',
+      amount: 42.5,
+      description: 'Mercadona',
+      categoryId: 1,
+      date: '2026-09-01',
+    },
+    { id: 3, type: 'expense', amount: 30, description: 'Luz', categoryId: 99, date: '2026-08-03' },
   ],
-  categories: [{ id: 1, emoji: '🛒', name: 'Alimentación', color: '#30d158', budget: 300 }],
-  goals: [
-    { id: 1, name: 'Vacaciones', target: 1500, saved: 350.5, deadline: '2027-06-01', emoji: '🏖️' },
-    { id: 2, name: 'Sin fecha', target: 100, saved: 0, deadline: '', emoji: '🎯' },
+  categories: [
+    { id: 1, emoji: '🛒', name: 'Alimentación', color: '#30d158', budget: 300 },
+    { id: 2, emoji: '💼', name: 'Nómina', color: '#000', budget: 0 },
   ],
+  goals: [{ id: 1, name: 'Vacaciones', target: 1500, saved: 350.5, deadline: '', emoji: '🏖️' }],
   settings: { currency: 'EUR', userName: 'Dani' },
   exportedAt: '2026-09-15T10:00:00.000Z',
 };
 
-/** Export v2 mínimo (la reescritura anterior, con movimientos). */
 const V2_EXPORT = {
   schemaVersion: 2,
-  exportedAt: '2026-09-14T10:00:00.000Z',
   movements: [{ id: 'm1', type: 'expense', amountCents: 4250 }],
-  categories: [],
-  recurringRules: [],
-  savingsEntries: [
-    { id: 'e1', month: '2026-08', amountCents: 20000, createdAt: '2026-08-01T00:00:00.000Z' },
-    {
-      id: 'e2',
-      month: '2026-09',
-      amountCents: 15000,
-      goalId: 'g1',
-      createdAt: '2026-09-01T00:00:00.000Z',
-    },
-  ],
-  goals: [
-    {
-      id: 'g1',
-      name: 'Coche',
-      emoji: '🚗',
-      targetCents: 500000,
-      deadline: '2027-12-01',
-      archived: false,
-    },
-  ],
-  settings: { currency: 'EUR', userName: 'Dani', theme: 'system', savingsTargetPct: 20 },
+  savingsEntries: [],
+  goals: [],
+  settings: { currency: 'USD', userName: 'Dani', theme: 'dark', savingsTargetPct: 20 },
 };
 
-function validV3(): ExportBundle {
+const V3_EXPORT = {
+  schemaVersion: 3,
+  savingsEntries: [{ id: 'e1', month: '2026-08', amountCents: 20000 }],
+  patterns: [],
+  goals: [],
+  settings: { currency: 'EUR', theme: 'light', schemaVersion: 3, welcomeSeen: true },
+};
+
+function validV4(): ExportBundle {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     exportedAt: '2026-09-15T10:00:00.000Z',
-    savingsEntries: [
-      { id: 'e1', month: '2026-08', amountCents: 20000, createdAt: '2026-08-01T00:00:00.000Z' },
-    ],
-    patterns: [
-      { id: 'p1', name: 'Base', emoji: '🐷', monthlyCents: 20000, annualRatePct: 0, active: true },
+    mortgages: [
       {
-        id: 'p2',
-        name: 'Ambicioso',
-        emoji: '🚀',
-        monthlyCents: 40000,
-        annualRatePct: 3,
-        active: false,
+        id: 'h1',
+        name: 'Piso',
+        principalCents: 18_000_000,
+        annualRatePct: 2.5,
+        termMonths: 360,
+        startMonth: '2023-05',
+        rateChanges: [{ id: 'r1', fromMonth: '2024-05', annualRatePct: 3.1 }],
+        prepayments: [{ id: 'p1', month: '2025-01', amountCents: 500_000, mode: 'term' }],
+        includeInExpenses: true,
+        createdAt: '2023-05-01T00:00:00.000Z',
       },
     ],
-    goals: [
+    categories: [{ id: 'c1', name: 'Gas', emoji: '🔥', archived: false }],
+    expenses: [
       {
-        id: 'g1',
-        name: 'Boda',
-        emoji: '💍',
-        targetCents: 1200000,
-        deadline: '2027-08-31',
-        archived: false,
+        id: 'e1',
+        month: '2026-01',
+        categoryId: 'c1',
+        amountCents: 9000,
+        createdAt: '2026-01-10T00:00:00.000Z',
       },
     ],
-    settings: { currency: 'EUR', theme: 'system', schemaVersion: 3 },
+    settings: { currency: 'EUR', theme: 'system', schemaVersion: 4, categoriesSeeded: true },
   };
 }
 
+const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+
 describe('detectSchema', () => {
-  it('distingue v1, v2, v3 y desconocido', () => {
+  it('distingue v1, v2, v3, v4 y desconocido', () => {
     expect(detectSchema(V1_EXPORT)).toBe('v1');
     expect(detectSchema(V2_EXPORT)).toBe('v2');
-    expect(detectSchema(validV3())).toBe('v3');
+    expect(detectSchema(V3_EXPORT)).toBe('v3');
+    expect(detectSchema(validV4())).toBe('v4');
     expect(detectSchema({ foo: 1 })).toBe('unknown');
     expect(detectSchema(null)).toBe('unknown');
   });
@@ -105,94 +102,87 @@ describe('detectSchema', () => {
 describe('migrateV1', () => {
   const bundle = migrateV1(V1_EXPORT, deps);
 
-  it('convierte metas: euros → céntimos y saved → punto de partida asignado', () => {
-    expect(bundle.goals[0]!.targetCents).toBe(150000);
-    expect(bundle.savingsEntries).toHaveLength(1);
-    const e = bundle.savingsEntries[0]!;
-    expect(e.amountCents).toBe(35050);
-    expect(e.goalId).toBe(bundle.goals[0]!.id);
-    expect(e.month).toBe('2026-09');
-    expect(e.initial).toBe(true); // ahorro previo: no cuenta como aportación del mes
+  it('convierte los gastos (euros → céntimos, fecha → mes) y descarta ingresos', () => {
+    expect(bundle.expenses).toHaveLength(2);
+    const [merca, luz] = bundle.expenses;
+    expect(merca).toMatchObject({ month: '2026-09', amountCents: 4250, note: 'Mercadona' });
+    expect(luz).toMatchObject({ month: '2026-08', amountCents: 3000 });
   });
 
-  it('descarta los movimientos v1 (la app ya no modela gastos/ingresos)', () => {
-    expect(bundle.patterns).toEqual([]);
-    expect('movements' in bundle).toBe(false);
+  it('recrea solo las categorías usadas; las colgantes van a "Sin categoría"', () => {
+    const names = bundle.categories.map((c) => c.name).sort();
+    expect(names).toEqual(['Alimentación', 'Sin categoría']);
+    const ids = new Set(bundle.categories.map((c) => c.id));
+    expect(bundle.expenses.every((e) => ids.has(e.categoryId))).toBe(true);
   });
 
-  it('deadline vacío en v1 → +12 meses; settings con defaults v3', () => {
-    expect(bundle.goals[1]!.deadline).toBe('2027-09-01');
+  it('conserva ajustes y pasa la validación v4', () => {
     expect(bundle.settings.userName).toBe('Dani');
+    expect(bundle.mortgages).toEqual([]);
     expect(bundle.schemaVersion).toBe(SCHEMA_VERSION);
-  });
-
-  it('el resultado pasa la validación v3', () => {
-    expect(() => validateV3Bundle(bundle)).not.toThrow();
+    expect(() => validateV4Bundle(clone(bundle))).not.toThrow();
   });
 
   it('export v1 corrupto → ImportError', () => {
-    const bad = { ...V1_EXPORT, goals: [{ target: 'mucho' }] };
+    const bad = { ...V1_EXPORT, transactions: [{ type: 'expense', amount: 'mucho' }] };
     expect(() => migrateV1(bad, deps)).toThrow(ImportError);
   });
 });
 
-describe('migrateV2', () => {
-  const bundle = migrateV2(V2_EXPORT);
-
-  it('conserva ahorro y objetivos; descarta movimientos y savingsTargetPct', () => {
-    expect(bundle.savingsEntries).toHaveLength(2);
-    expect(bundle.goals).toHaveLength(1);
-    expect(bundle.patterns).toEqual([]);
-    expect('savingsTargetPct' in bundle.settings).toBe(false);
-    expect(bundle.settings.schemaVersion).toBe(SCHEMA_VERSION);
-  });
-
-  it('el resultado pasa la validación v3', () => {
-    expect(() => validateV3Bundle(bundle)).not.toThrow();
+describe('migrateSettingsOnly (v2/v3)', () => {
+  it('conserva solo los ajustes', () => {
+    const b2 = migrateSettingsOnly(V2_EXPORT);
+    expect(b2.settings).toMatchObject({ currency: 'USD', theme: 'dark', userName: 'Dani' });
+    expect('savingsTargetPct' in b2.settings).toBe(false);
+    expect(b2.expenses).toEqual([]);
+    const b3 = migrateSettingsOnly(V3_EXPORT);
+    expect(b3.settings.welcomeSeen).toBe(true);
+    expect(() => validateV4Bundle(clone(b3))).not.toThrow();
   });
 });
 
-describe('validateV3Bundle', () => {
+describe('validateV4Bundle', () => {
   it('acepta un bundle válido', () => {
-    expect(validateV3Bundle(JSON.parse(JSON.stringify(validV3()))).patterns).toHaveLength(2);
+    expect(validateV4Bundle(clone(validV4())).mortgages[0]!.prepayments).toHaveLength(1);
   });
 
   it('rechaza céntimos no enteros', () => {
-    const b = JSON.parse(JSON.stringify(validV3()));
-    b.savingsEntries[0].amountCents = 123.45;
-    expect(() => validateV3Bundle(b)).toThrow(/céntimos/);
+    const b = clone(validV4());
+    b.expenses[0]!.amountCents = 12.5;
+    expect(() => validateV4Bundle(b)).toThrow(/céntimos/);
   });
 
-  it('rechaza dos patrones activos', () => {
-    const b = JSON.parse(JSON.stringify(validV3()));
-    b.patterns[1].active = true;
-    expect(() => validateV3Bundle(b)).toThrow(/un patrón activo/);
+  it('rechaza gastos con categoría inexistente', () => {
+    const b = clone(validV4());
+    b.expenses[0]!.categoryId = 'nope';
+    expect(() => validateV4Bundle(b)).toThrow(/categoría inexistente/);
   });
 
-  it('rechaza patrón con mensualidad negativa o interés fuera de rango', () => {
-    const b1 = JSON.parse(JSON.stringify(validV3()));
-    b1.patterns[0].monthlyCents = -1;
-    expect(() => validateV3Bundle(b1)).toThrow(ImportError);
-    const b2 = JSON.parse(JSON.stringify(validV3()));
-    b2.patterns[0].annualRatePct = 200;
-    expect(() => validateV3Bundle(b2)).toThrow(ImportError);
+  it('rechaza hipotecas inválidas', () => {
+    const b1 = clone(validV4());
+    b1.mortgages[0]!.termMonths = 0;
+    expect(() => validateV4Bundle(b1)).toThrow(ImportError);
+    const b2 = clone(validV4());
+    b2.mortgages[0]!.startMonth = '2023-13';
+    expect(() => validateV4Bundle(b2)).toThrow(/YYYY-MM/);
+    const b3 = clone(validV4());
+    (b3.mortgages[0]!.prepayments[0] as { mode: string }).mode = 'otro';
+    expect(() => validateV4Bundle(b3)).toThrow(/mode/);
   });
 
-  it('rechaza fechas mal formadas y schemaVersion desconocida', () => {
-    const b1 = JSON.parse(JSON.stringify(validV3()));
-    b1.goals[0].deadline = '01/06/2027';
-    expect(() => validateV3Bundle(b1)).toThrow(ImportError);
-    const b2 = JSON.parse(JSON.stringify(validV3()));
-    b2.schemaVersion = 99;
-    expect(() => validateV3Bundle(b2)).toThrow(/schemaVersion/);
+  it('rechaza schemaVersion desconocida', () => {
+    const b = clone(validV4());
+    b.schemaVersion = 99;
+    expect(() => validateV4Bundle(b)).toThrow(/schemaVersion/);
   });
 });
 
 describe('importAny', () => {
-  it('enruta v1 y v2 a sus migradores y v3 al validador', () => {
-    expect(importAny(V1_EXPORT, deps).schemaVersion).toBe(SCHEMA_VERSION);
-    expect(importAny(V2_EXPORT, deps).savingsEntries).toHaveLength(2);
-    expect(importAny(validV3(), deps).patterns).toHaveLength(2);
+  it('enruta cada versión a su migrador o validador', () => {
+    expect(importAny(V1_EXPORT, deps).expenses).toHaveLength(2);
+    expect(importAny(V2_EXPORT, deps).settings.currency).toBe('USD');
+    expect(importAny(V3_EXPORT, deps).mortgages).toEqual([]);
+    expect(importAny(validV4(), deps).mortgages).toHaveLength(1);
   });
 
   it('archivo desconocido → ImportError con mensaje claro', () => {
