@@ -33,6 +33,7 @@ export const t = {
     delete: 'Eliminar',
     edit: 'Editar',
     close: 'Cerrar',
+    undo: 'Deshacer',
   },
   mortgage: {
     title: 'Hipoteca',
@@ -268,6 +269,7 @@ export const t = {
   toasts: {
     saved: 'Guardado',
     deleted: 'Eliminado',
+    expenseDeleted: (name: string) => `Gasto eliminado: ${name}`,
     exported: 'Exportado',
     importError: 'No se pudo importar',
   },

@@ -213,8 +213,16 @@ i.fi::before {
   padding: 20px;
 }
 .card + .card,
+.view-enter > * + *,
+.two-col > * + *,
 .stack > * + * {
   margin-top: 14px;
+}
+@media (min-width: 700px) {
+  .two-col > * + *,
+  .two-col > .card + .card {
+    margin-top: 0;
+  }
 }
 .card h2 {
   font-size: 15px;

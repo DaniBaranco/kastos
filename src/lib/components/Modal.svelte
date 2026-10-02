@@ -17,12 +17,26 @@
   $effect(() => {
     if (open) {
       previouslyFocused = document.activeElement;
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
       queueMicrotask(() => focusables()[0]?.focus());
       return () => {
+        document.body.style.overflow = prevOverflow;
         (previouslyFocused as HTMLElement | null)?.focus?.();
       };
     }
   });
+
+  // Se monta en <body> para que ningún ancestro con transform/animación
+  // convierta el `position: fixed` en relativo a la vista.
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return {
+      destroy() {
+        node.remove();
+      },
+    };
+  }
 
   function focusables(): HTMLElement[] {
     if (!sheet) return [];
@@ -59,6 +73,7 @@
   <div
     class="overlay"
     role="presentation"
+    use:portal
     onclick={(e) => {
       if (e.target === e.currentTarget) onclose();
     }}
@@ -103,8 +118,9 @@
     box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 560px;
-    max-height: 90dvh;
+    max-height: calc(100dvh - max(24px, env(safe-area-inset-top) + 12px));
     overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
     animation: slideUp 0.24s var(--ease);
   }

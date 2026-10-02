@@ -67,6 +67,14 @@
     const n = await app.copyMonth(prevMonth, month);
     toast.show(t.expenses.copied(n));
   }
+  async function removeExpense(e: Expense) {
+    const snapshot = $state.snapshot(e) as Expense;
+    await app.deleteExpense(e.id);
+    toast.show(t.toasts.expenseDeleted(catInfo(e.categoryId).name), 'ok', {
+      label: t.actions.undo,
+      run: () => app.saveExpense(snapshot),
+    });
+  }
 
   function deltaText(p: number | null): string {
     if (p === null) return t.expenses.noData;
@@ -184,6 +192,7 @@
           <span class="row-sub">{t.expenses.mortgageAuto}</span>
         </div>
         <span class="row-amount num">{fmt(mortgageCents)}</span>
+        <span class="row-delete-spacer" aria-hidden="true"></span>
       </li>
     {/if}
     {#each monthExpenses as e (e.id)}
@@ -195,6 +204,14 @@
           {#if e.note}<span class="row-sub">{e.note}</span>{/if}
         </button>
         <span class="row-amount num">{fmt(e.amountCents)}</span>
+        <button
+          class="icon-btn danger row-delete"
+          aria-label="{t.actions.delete} {info.name}"
+          title={t.actions.delete}
+          onclick={() => removeExpense(e)}
+        >
+          <i class="fi fi-rr-trash" aria-hidden="true"></i>
+        </button>
       </li>
     {/each}
   </ul>
@@ -247,6 +264,14 @@
   .copy {
     margin: 0 auto 8px;
     display: flex;
+  }
+  .row-delete {
+    flex-shrink: 0;
+    margin-right: -6px;
+  }
+  .row-delete-spacer {
+    width: 28px;
+    flex-shrink: 0;
   }
   .as-button {
     text-align: left;
